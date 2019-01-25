@@ -45,16 +45,16 @@ public class Arm
 	public static void setArmPos(int position)
 	{
 		if(position == 1)
-			setArmPosition(1);
+			setArmPosition(straight);
 
 		else if(position == 2)
-			setArmPosition(2);
+			setArmPosition(hiGoal);
 
 		else if(position == 3)
-			setArmPosition(3);
+			setArmPosition(hiGoal2);
 			
 		else if(position == 4)
-			setArmPosition(4);
+			setArmPosition(straight2);
 
 		else
 			System.out.println("INVALID ARM POSITION");
