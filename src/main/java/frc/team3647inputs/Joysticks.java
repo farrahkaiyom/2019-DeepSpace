@@ -1,57 +1,91 @@
 package frc.team3647inputs;
 
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.XboxController;
 
 public class Joysticks 
 {
-	public Joystick mainController = new Joystick(0);
-	public Joystick coController = new Joystick(1);
-	public GenericHID dPad = new Joystick(1);
+	/**
+	 * XboxController Object for Main-Driver Controller; contains all Xbox Controller Functions
+	 */
+	private XboxController controller;
 	
-	// Main controller Variables
-	public double leftTrigger, rightTrigger, leftJoySticky, leftJoyStickx, rightJoySticky, rightJoyStickx;
-	public boolean rightBumper, leftBumper, buttonA, buttonB, buttonY, buttonX;
+	// to get dPad degrees
+	private GenericHID dPad;
 	
-	//Co-Driver Controller Variables
-	public double leftTrigger1, rightTrigger1, leftJoySticky1, leftJoyStickx1, rightJoySticky1, rightJoyStickx1;
-	public boolean rightBumper1, leftBumper1, buttonA1, buttonB1, buttonY1, buttonX1, dPadUp, dPadDown, dPadSide;
-	public int dPadValue;
+	/**
+	 * Main controller Variable
+	 */
+	public double leftTrigger, rightTrigger, leftJoyStickY, leftJoyStickX, rightJoyStickY, rightJoyStickX;
+	public boolean rightBumper, leftBumper, buttonA, buttonB, buttonY, buttonX, dPadDown, dPadSide, dPadUp;
 	
+	/**
+	 * Co-Driver Controller Variable
+	 */
+	public int dPadValue; //dPad degree value
+
+
+	public Joysticks(int controllerPin)
+	{
+		controller = new XboxController(controllerPin);
+		dPad = new XboxController(controllerPin);
+	}
+
+	
+	/**
+	 * Set main controller values.
+	 */
 	public void setMainContollerValues()
 	{
-		//rightBumper =	mainController.getRawButton(6);
-		leftBumper =	mainController.getRawButton(5);
-		leftTrigger = fixJoystickValue(mainController.getRawAxis(2));
-		buttonA =	mainController.getRawButton(1);
-		buttonB = mainController.getRawButton(2);
-		rightTrigger = fixJoystickValue(mainController.getRawAxis(3));
-		buttonY = mainController.getRawButton(4);
-		leftJoySticky = fixJoystickValue(-mainController.getRawAxis(1));
-		leftJoyStickx = fixJoystickValue(mainController.getRawAxis(0));
-		rightJoyStickx = fixJoystickValue(mainController.getRawAxis(4));
-		rightJoySticky = -fixJoystickValue(mainController.getRawAxis(5));
-		buttonX = mainController.getRawButton(3);
-	}
-	
-	public void setCoDriverContollerValues()
-	{
-		rightBumper1 =	coController.getRawButton(6);
-		leftBumper1 =	coController.getRawButton(5);
-		leftTrigger1 = fixJoystickValue(coController.getRawAxis(2));
-		buttonA1 =	coController.getRawButton(1);
-		buttonB1 = coController.getRawButton(2);
-		rightTrigger1 = fixJoystickValue(coController.getRawAxis(3));
-		buttonY1 = coController.getRawButton(4);
-		leftJoySticky1 = fixJoystickValue(-coController.getRawAxis(1));
-		leftJoyStickx1 = fixJoystickValue(coController.getRawAxis(0));
-		rightJoyStickx1 = fixJoystickValue(coController.getRawAxis(4));
-		rightJoySticky1 = -fixJoystickValue(coController.getRawAxis(5));
-		buttonX1 = coController.getRawButton(3);
+		leftBumper		= 	controller.getBumper(XboxController.Hand.kLeft);
+		rightBumper 	=	controller.getRawButton(6);
+		leftTrigger 	= 	joystickThreshold(controller.getRawAxis(2));
+		rightTrigger 	= 	joystickThreshold(controller.getRawAxis(3));
+		buttonA 		=	controller.getRawButton(1);
+		buttonB 		= 	controller.getRawButton(2);
+		buttonX 		= 	controller.getRawButton(3);
+		buttonY 		= 	controller.getRawButton(4);
+		leftJoyStickX 	= 	joystickThreshold(controller.getRawAxis(0));
+		leftJoyStickY 	= 	joystickThreshold(-controller.getRawAxis(1));
+		rightJoyStickX = 	joystickThreshold(controller.getRawAxis(4));
+		rightJoyStickY = 	-joystickThreshold(controller.getRawAxis(5));
 		dPadValue = dPad.getPOV();
 		setDPadValues();
 	}
+
+
+	/**
+	 * @param controller 1 = mainController, 2 = coController, 3 = both
+	 * @param power Rumble power from 0 to 1
+	 * @param times amount of times to rumble
+	 */
+	public void vibrate(int controller, double power, int times)
+	{
+		double delay = 0.1;
+		for(int i = 0; i < times; i++) 
+		{
+			setRumble(power);
+			Timer.delay(delay);
+			setRumble(0);
+			Timer.delay(delay);
+		}
+	}
+
+	/**
+	 * easier way to set rumble for both side of controller
+	 * @param joystick object
+	 * @param power power of rumble from 0 to 1
+	 */
+	private void setRumble(double power)
+	{
+		controller.setRumble(GenericHID.RumbleType.kLeftRumble, power);
+		controller.setRumble(GenericHID.RumbleType.kRightRumble, power);
+	}
 	
+	/**
+	 * Set co driver dPad values. 0 degrees = top, 180 = down, 90 || 270 = side
+	 */
 	public void setDPadValues()
 	{
 		if(dPadValue == 0)
@@ -80,9 +114,15 @@ public class Joysticks
 		}
 	}
 	
-	public static double fixJoystickValue(double jValue)
+
+	/**
+	 * 
+	 * @param jValue is the joystick value input
+	 * @return returns joystick value if outside of joystick threshold, else returns zero
+	 */
+	public static double joystickThreshold(double jValue)
 	{
-		if(jValue < .13 && jValue > -.13)
+		if(jValue < .15 && jValue > -.15)
 		{
 			return 0;
 		}
